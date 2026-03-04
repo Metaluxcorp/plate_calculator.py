@@ -68,7 +68,6 @@ if font_base64:
         border-radius: 8px;
     }}
     
-    /* Submit/Order Button */
     .submit-btn > div.stButton > button {{
         background-color: #FF6600;
         color: white;
@@ -173,7 +172,9 @@ for i, part in enumerate(st.session_state.parts):
     
     total_all_parts_weight += row_lbs
     total_all_parts_quote += row_total
-    parts_data_for_email.append(f"- {p_qty}x {selected_frac} ({p_width}\"x{p_height}\") | {row_lbs:.1f} lbs | ${row_total:,.2f}")
+    
+    # FORMATTED LINE FOR EMAIL: (QTY) Size" x Size" x Thickness"
+    parts_data_for_email.append(f"({p_qty}) {p_width}\" x {p_height}\" x {selected_frac}")
 
 st.markdown('<div class="add-btn">', unsafe_allow_html=True)
 st.button("+ ADD PART", on_click=add_part)
@@ -225,7 +226,6 @@ Notes:
             msg['From'] = "Metaluxcorp@gmail.com"
             msg['To'] = "Metaluxcorp@gmail.com"
             
-            # Attach PDFs
             if uploaded_files:
                 for f in uploaded_files:
                     msg.add_attachment(f.read(), maintype='application', subtype='pdf', filename=f.name)
