@@ -30,7 +30,6 @@ if font_base64:
         src: url(data:font/truetype;base64,{font_base64}) format('truetype');
     }}
     
-    /* Apply font to everything */
     html, body, [class*="css"], .stMarkdown, .stButton, label, .stSelectbox, .stNumberInput {{
         font-family: 'SansationLight', sans-serif !important;
     }}
@@ -43,7 +42,7 @@ if font_base64:
     
     .brand-main {{
         color: black;
-        font-size: 65px; /* Unified size for the whole word */
+        font-size: 65px; 
         font-weight: normal;
         display: block;
         line-height: 1.2;
@@ -51,8 +50,7 @@ if font_base64:
     
     .orange-x {{
         color: #FF6600;
-        text-transform: uppercase; /* Ensures X is capitalized */
-        font-weight: normal;
+        text-transform: uppercase;
     }}
     
     .brand-sub {{
@@ -64,7 +62,6 @@ if font_base64:
         letter-spacing: 3px;
     }}
     
-    /* Custom button styling */
     div.stButton > button:first-child {{
         background-color: #FF6600;
         color: white;
@@ -82,7 +79,7 @@ if font_base64:
     """
     st.markdown(font_css, unsafe_allow_html=True)
 
-# Display the custom header
+# Header Display
 st.markdown("""
     <div class="brand-container">
         <div class="brand-main">metalu<span class="orange-x">X</span></div>
@@ -90,7 +87,7 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# 4. Reference Data (Exact Values from your Excel)
+# 4. Data Reference
 PLATE_DATA = {
     0.125:  {"lbs_sqft": 6.16,  "price_lb": 0.45, "min_run": 3.0},
     0.1875: {"lbs_sqft": 7.66,  "price_lb": 0.45, "min_run": 4.0},
@@ -106,7 +103,7 @@ PLATE_DATA = {
     1.5:    {"lbs_sqft": 61.27, "price_lb": 0.75, "min_run": 55.0},
 }
 
-# 5. User Input Interface
+# 5. UI
 with st.container(border=True):
     col1, col2 = st.columns(2)
     with col1:
@@ -116,45 +113,59 @@ with st.container(border=True):
         quantity = st.number_input("Quantity", min_value=1, value=1, step=1)
         height = st.number_input("Height (in)", min_value=1.0, value=12.0, step=0.25)
 
-# 6. Logic (The Excel Brain)
+# 6. Calculations
 data = PLATE_DATA[thickness]
 total_sqft = (width * height * quantity) / 144
 total_lbs = total_sqft * data["lbs_sqft"]
-
 material_cost = total_lbs * data["price_lb"]
 plasma_cost = total_sqft * (data["min_run"] / 1.2)
 fab_cost = quantity * 0.708333
 drafting_fee = 23.00
-
 taxable_total = material_cost + plasma_cost + fab_cost
 subtotal = taxable_total + drafting_fee + (taxable_total * 0.07)
-
-# Profit Logic (OHP)
 ohp_rate = 0.45 if subtotal > 500 else 0.50
 final_total = subtotal + (subtotal * ohp_rate)
 
-# 7. Metrics Display
+# 7. Display
 st.divider()
 m1, m2, m3 = st.columns(3)
 m1.metric("Weight", f"{total_lbs:.1f} lbs")
 m2.metric("Per Plate", f"${(final_total/quantity):.2f}")
 m3.subheader(f"Total Quote: ${final_total:,.2f}")
 
-# 8. Order Submission Section
+# 8. Order Submission (Fix for SyntaxError)
 st.write("---")
 st.write("### 📝 Submit Production Order")
 customer = st.text_input("Customer/Company Name")
-notes = st.text_area("Order Details (Drilled holes, pick-up time, etc.)")
+notes = st.text_area("Order Details")
 
 if st.button("SEND ORDER TO OFFICE", use_container_width=True):
     if not customer:
         st.error("Please enter a customer name.")
     else:
+        # Properly closed triple-quoted f-string
         email_content = f"""
-        NEW PLATE ORDER
-        ---------------
-        Customer: {customer}
-        Size: {width}" x {height}" x {thickness}"
-        Quantity: {quantity}
-        Total Weight: {total_lbs:.1f} lbs
-        Total Quote: ${final_total:,.2f}
+NEW PLATE ORDER
+---------------
+Customer: {customer}
+Size: {width}" x {height}" x {thickness}"
+Quantity: {quantity}
+Total Weight: {total_lbs:.1f} lbs
+Total Quote: ${final_total:,.2f}
+
+Notes:
+{notes}
+"""
+        try:
+            msg = EmailMessage()
+            msg.set_content(email_content)
+            msg['Subject'] = f"PLATE ORDER: {customer}"
+            msg['From'] = "Metaluxcorp@gmail.com"
+            msg['To'] = "Metaluxcorp@gmail.com"
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+                smtp.login("Metaluxcorp@gmail.com", "jihihaxgrvtgcstz")
+                smtp.send_message(msg)
+            st.balloons()
+            st.success("Order received!")
+        except Exception as e:
+            st.error(f"Error: {e}")
