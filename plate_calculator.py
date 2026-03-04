@@ -2,37 +2,47 @@ import streamlit as st
 import smtplib
 from email.message import EmailMessage
 
-# 1. Page Configuration - Using your logo with white background
-# Ensure 'Metalux_White.jpg' is uploaded to your GitHub folder
+# 1. Page Configuration - Logo with white background
 st.set_page_config(
     page_title="metaluX Steel Plate Calculator", 
     page_icon="Metalux_White.jpg",
     layout="centered"
 )
 
-# 2. Custom Styling for the Title (Sansation-style font & Orange X)
+# 2. Custom Branding (Sansation Font + Black Text + Orange X)
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Sansita:wght@400;700&display=swap');
     
     .main-title {
-        font-family: 'Sansita', sans-serif; /* Closest Google Font to Sansation */
+        font-family: 'Sansita', sans-serif;
         color: black;
-        font-size: 45px;
+        font-size: 42px;
         font-weight: 700;
         text-align: center;
-        margin-bottom: 20px;
+        margin-bottom: 5px;
     }
     .orange-x {
-        color: #FF6600; /* Your Metalux Orange */
+        color: #FF6600; /* Metalux Orange */
+    }
+    /* Style the buttons to be orange */
+    div.stButton > button:first-child {
+        background-color: #FF6600;
+        color: white;
+        border: none;
+    }
+    div.stButton > button:first-child:hover {
+        background-color: #e65c00;
+        color: white;
     }
     </style>
     <div class="main-title">
         metalu<span class="orange-x">X</span> Steel Plate Calculator
     </div>
+    <p style="text-align: center; color: gray;">Precision Custom Plate Quoting</p>
     """, unsafe_allow_html=True)
 
-# 3. Reference Data (Same as your Excel 'Data' sheet)
+# 3. Data Reference (From your Excel "Data" Sheet)
 PLATE_DATA = {
     0.125:  {"lbs_sqft": 6.16,  "price_lb": 0.45, "min_run": 3.0},
     0.1875: {"lbs_sqft": 7.66,  "price_lb": 0.45, "min_run": 4.0},
@@ -48,32 +58,88 @@ PLATE_DATA = {
     1.5:    {"lbs_sqft": 61.27, "price_lb": 0.75, "min_run": 55.0},
 }
 
-# --- REST OF THE INPUTS AND CALCULATION LOGIC ---
+# 4. User Interface
 with st.container(border=True):
-    col1, col2 = st.columns(2)
-    with col1:
-        thickness = st.selectbox("Plate Thickness (inches)", options=list(PLATE_DATA.keys()))
-        width = st.number_input("Width (inches)", min_value=1.0, value=12.0, step=0.25)
-    with col2:
+    c1, c2 = st.columns(2)
+    with c1:
+        thickness = st.selectbox("Plate Thickness (in)", options=list(PLATE_DATA.keys()))
+        width = st.number_input("Width (in)", min_value=1.0, value=12.0, step=0.25)
+    with c2:
         quantity = st.number_input("Quantity", min_value=1, value=1, step=1)
-        height = st.number_input("Height (inches)", min_value=1.0, value=12.0, step=0.25)
+        height = st.number_input("Height (in)", min_value=1.0, value=12.0, step=0.25)
 
-# (Calculation math goes here - same as previous version)
+# 5. Calculation Math (Directly from Excel formulas)
 data = PLATE_DATA[thickness]
+
+# Weight logic
 total_sqft = (width * height * quantity) / 144
 total_lbs = total_sqft * data["lbs_sqft"]
+
+# Cost logic
 material_cost = total_lbs * data["price_lb"]
-plasma_cost = total_sqft * (data["min_run"] / 1.2)
-fab_cost = quantity * 0.708333
+plasma_cost = total_sqft * (data["min_run"] / 1.2) # Formula from Excel "Plasma" col
+fab_cost = quantity * 0.708333                   # Fixed fab rate from Excel
 drafting_fee = 23.00
-taxable_subtotal = material_cost + plasma_cost + fab_cost
-tax = taxable_subtotal * 0.07
-subtotal = taxable_subtotal + drafting_fee + tax
+
+# Tax logic (7%)
+taxable_items = material_cost + plasma_cost + fab_cost
+tax = taxable_items * 0.07
+subtotal = taxable_items + drafting_fee + tax
+
+# OHP Logic (50% standard, 45% if > $500)
 ohp_rate = 0.45 if subtotal > 500 else 0.50
 ohp_amount = subtotal * ohp_rate
 final_total = subtotal + ohp_amount
 
+# 6. Results Display
 st.divider()
-st.header(f"Total Quote: ${final_total:,.2f}")
+res1, res2, res3 = st.columns(3)
+res1.metric("Total Weight", f"{total_lbs:.1f} lbs")
+res2.metric("Per Plate", f"${(final_total/quantity):.2f}")
+res3.subheader(f"Total: ${final_total:,.2f}")
 
-# Ordering logic...
+# 7. Ordering Section
+st.write("---")
+st.write("### 📝 Submit for Production")
+cust_name = st.text_input("Customer/Company Name")
+cust_notes = st.text_area("Additional Notes (Special Cuts, Delivery, etc.)")
+
+if st.button("PLACE ORDER NOW", use_container_width=True):
+    if not cust_name:
+        st.error("Please enter a name to submit the order.")
+    else:
+        # Email Details
+        email_content = f"""
+        NEW PLATE ORDER - metaluX Calculator
+        -----------------------------------
+        Customer: {cust_name}
+        
+        SPECS:
+        Thickness: {thickness}"
+        Dimensions: {width}" x {height}"
+        Quantity: {quantity}
+        Total Weight: {total_lbs:.1f} lbs
+        
+        PRICING:
+        Total Quote: ${final_total:,.2f}
+        Price Per Unit: ${final_total/quantity:.2f}
+        
+        NOTES:
+        {cust_notes}
+        """
+        
+        try:
+            msg = EmailMessage()
+            msg.set_content(email_content)
+            msg['Subject'] = f"PLATE ORDER: {cust_name}"
+            msg['From'] = "Metaluxcorp@gmail.com"
+            msg['To'] = "Metaluxcorp@gmail.com"
+            
+            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+                smtp.login("Metaluxcorp@gmail.com", "jihihaxgrvtgcstz")
+                smtp.send_message(msg)
+            
+            st.balloons()
+            st.success("Order Successfully Sent to metaluX!")
+        except Exception as e:
+            st.error(f"Error: {e}")
