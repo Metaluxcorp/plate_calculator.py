@@ -233,7 +233,7 @@ if st.button("SEND ORDER TO OFFICE"):
         email_content = f"""
 NEW PLATE ORDER
 ---------------------------
-Customer: {customer}
+Sender: {customer}
 PO Number: {po_number if po_number else 'N/A'}
 
 PARTS LIST:
@@ -251,7 +251,13 @@ Notes:
             msg.set_content(email_content)
             msg['Subject'] = f"ORDER: {customer} (PO: {po_number if po_number else 'N/A'})"
             msg['From'] = "Metaluxcorp@gmail.com"
-            msg['To'] = "Metaluxcorp@gmail.com"
+            
+            # SENDING TO BOTH
+            recipients = ["Metaluxcorp@gmail.com", "boltcosf@gmail.com"]
+            msg['To'] = ", ".join(recipients)
+            
+            # Ensures if anyone hits reply, both parties see it
+            msg['Reply-To'] = "Metaluxcorp@gmail.com, boltcosf@gmail.com"
             
             if uploaded_files:
                 for f in uploaded_files:
@@ -261,7 +267,7 @@ Notes:
                 smtp.login("Metaluxcorp@gmail.com", "jihihaxgrvtgcstz")
                 smtp.send_message(msg)
             st.balloons()
-            st.success(f"Order for {customer} and files sent successfully!")
+            st.success(f"Order for {customer} sent successfully! Confirmation sent to Boltco office.")
         except Exception as e:
             st.error(f"Error: {e}")
 
@@ -269,7 +275,7 @@ Notes:
 now = datetime.datetime.now().strftime("%H:%M:%S")
 st.markdown(f"""
     <div class="footer-container">
-        <span class="footer-text">metaluX v2.1 Build Success | </span>
+        <span class="footer-text">metaluX v2.3 Build Success | </span>
         <span class="heartbeat-dot">●</span> 
         <span class="footer-text">System Online | Heartbeat: {now}</span>
     </div>
