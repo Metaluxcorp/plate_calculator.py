@@ -68,7 +68,7 @@ if font_base64:
         border-radius: 8px;
     }}
     
-    /* "SEND ORDER TO OFFICE" Button - Branded Orange */
+    /* Main Orange Button */
     .stButton > button {{
         background-color: #FF6600 !important;
         color: white !important;
@@ -79,34 +79,26 @@ if font_base64:
         width: 100%;
     }}
     
-    /* Hover effect for the Orange Button */
     .stButton > button:hover {{
         background-color: #e65c00 !important;
-        color: white !important;
-        border: none !important;
     }}
 
-    /* Specific style for the "X" remove button to keep it neutral */
-    div[data-testid="column"] button:contains("X") {{
+    /* Neutral buttons */
+    div[data-testid="column"] button {{
         background-color: #f0f2f6 !important;
         color: #333 !important;
-        font-size: 14px !important;
-        height: 2.5em !important;
     }}
 
-    /* Specific style for the "+ ADD PART" to be neutral but visible */
     div.add-btn button {{
         background-color: #f0f2f6 !important;
         color: black !important;
         border: 1px solid #dcdfe6 !important;
-        font-size: 16px !important;
-        height: 3em !important;
     }}
     </style>
     """
     st.markdown(font_css, unsafe_allow_html=True)
 
-# Display the custom header
+# Display Header
 st.markdown("""
     <div class="brand-container">
         <div class="brand-main">metalu<span class="orange-x">X</span></div>
@@ -114,8 +106,9 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# 4. Data Reference & Fraction Mapping
+# 4. Data Reference
 FRACTION_MAP = {
+    'Select Thickness...': None,
     '1/8"': 0.125, '3/16"': 0.1875, '1/4"': 0.25, '5/16"': 0.3125,
     '3/8"': 0.375, '1/2"': 0.5, '5/8"': 0.625, '3/4"': 0.75,
     '7/8"': 0.875, '1"': 1.0, '1-1/4"': 1.25, '1-1/2"': 1.5
@@ -150,7 +143,7 @@ def remove_part(index):
     if len(st.session_state.parts) > 1:
         st.session_state.parts.pop(index)
 
-# 6. Multi-Line Input UI
+# 6. UI
 total_all_parts_quote = 0.0
 total_all_parts_weight = 0.0
 parts_data_for_email = []
@@ -168,27 +161,29 @@ for i, part in enumerate(st.session_state.parts):
         selected_frac = st.selectbox(f"Thick_{part['id']}", options=list(FRACTION_MAP.keys()), key=f"thick_sel_{part['id']}", label_visibility="collapsed")
         decimal_thick = FRACTION_MAP[selected_frac]
     with c2:
-        p_width = st.number_input(f"Width_{part['id']}", min_value=1.0, value=12.0, step=0.25, key=f"width_{part['id']}", label_visibility="collapsed")
+        # value=None makes the box appear empty
+        p_width = st.number_input(f"Width_{part['id']}", min_value=0.0, value=None, placeholder="0.00", step=0.25, key=f"width_{part['id']}", label_visibility="collapsed")
     with c3:
-        p_height = st.number_input(f"Height_{part['id']}", min_value=1.0, value=12.0, step=0.25, key=f"height_{part['id']}", label_visibility="collapsed")
+        p_height = st.number_input(f"Height_{part['id']}", min_value=0.0, value=None, placeholder="0.00", step=0.25, key=f"height_{part['id']}", label_visibility="collapsed")
     with c4:
-        p_qty = st.number_input(f"Qty_{part['id']}", min_value=1, value=1, step=1, key=f"qty_{part['id']}", label_visibility="collapsed")
+        p_qty = st.number_input(f"Qty_{part['id']}", min_value=0, value=None, placeholder="0", step=1, key=f"qty_{part['id']}", label_visibility="collapsed")
     with c5:
         if st.button("X", key=f"rem_{part['id']}"):
             remove_part(i)
             st.rerun()
 
-    # Calculations (matching your Excel logic)
-    row_data = PLATE_DATA[decimal_thick]
-    row_sqft = (p_width * p_height * p_qty) / 144
-    row_lbs = row_sqft * row_data["lbs_sqft"]
-    row_taxable = (row_lbs * row_data["price_lb"]) + (row_sqft * (row_data["min_run"] / 1.2)) + (p_qty * 0.708333)
-    row_subtotal = row_taxable + 23.00 + (row_taxable * 0.07)
-    row_total = row_subtotal * (1.45 if row_subtotal > 500 else 1.50)
-    
-    total_all_parts_weight += row_lbs
-    total_all_parts_quote += row_total
-    parts_data_for_email.append(f"({p_qty}) {p_width}\" x {p_height}\" x {selected_frac}")
+    # Calculations only run if data is entered
+    if decimal_thick and p_width and p_height and p_qty:
+        row_data = PLATE_DATA[decimal_thick]
+        row_sqft = (p_width * p_height * p_qty) / 144
+        row_lbs = row_sqft * row_data["lbs_sqft"]
+        row_taxable = (row_lbs * row_data["price_lb"]) + (row_sqft * (row_data["min_run"] / 1.2)) + (p_qty * 0.708333)
+        row_subtotal = row_taxable + 23.00 + (row_taxable * 0.07)
+        row_total = row_subtotal * (1.45 if row_subtotal > 500 else 1.50)
+        
+        total_all_parts_weight += row_lbs
+        total_all_parts_quote += row_total
+        parts_data_for_email.append(f"({p_qty}) {p_width}\" x {p_height}\" x {selected_frac}")
 
 st.markdown('<div class="add-btn">', unsafe_allow_html=True)
 st.button("+ ADD PART", on_click=add_part)
@@ -199,7 +194,7 @@ res_col1, res_col2 = st.columns([2, 1])
 res_col1.markdown(f"#### Total Combined Weight: **{total_all_parts_weight:.1f} lbs**")
 res_col2.markdown(f"## Total Quote: ${total_all_parts_quote:,.2f}")
 
-# 7. Project Details & File Upload
+# 7. Details
 st.write("---")
 st.write("### 📝 Project & Shipping Details")
 det1, det2 = st.columns(2)
@@ -214,6 +209,8 @@ notes = st.text_area("Additional Project Notes")
 if st.button("SEND ORDER TO OFFICE"):
     if not customer:
         st.error("Please enter a customer name.")
+    elif not parts_data_for_email:
+        st.error("Please enter at least one part with valid dimensions.")
     else:
         email_parts_list = "\n".join(parts_data_for_email)
         email_content = f"""
@@ -250,4 +247,3 @@ Notes:
             st.success("Order and files sent successfully!")
         except Exception as e:
             st.error(f"Error: {e}")
-            
