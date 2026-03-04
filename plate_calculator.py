@@ -83,7 +83,7 @@ if font_base64:
         background-color: #e65c00 !important;
     }}
 
-    /* Neutral buttons */
+    /* Neutral buttons for row management */
     div[data-testid="column"] button {{
         background-color: #f0f2f6 !important;
         color: #333 !important;
@@ -113,6 +113,15 @@ FRACTION_MAP = {
     '3/8"': 0.375, '1/2"': 0.5, '5/8"': 0.625, '3/4"': 0.75,
     '7/8"': 0.875, '1"': 1.0, '1-1/4"': 1.25, '1-1/2"': 1.5
 }
+
+# Added Customer Options
+CUSTOMER_OPTIONS = [
+    "Select Customer...",
+    "Boltco/Brett",
+    "Boltco/Brooke",
+    "Boltco/Katrina",
+    "Boltco/Michelle"
+]
 
 PLATE_DATA = {
     0.125:  {"lbs_sqft": 6.16,  "price_lb": 0.45, "min_run": 3.0},
@@ -161,7 +170,6 @@ for i, part in enumerate(st.session_state.parts):
         selected_frac = st.selectbox(f"Thick_{part['id']}", options=list(FRACTION_MAP.keys()), key=f"thick_sel_{part['id']}", label_visibility="collapsed")
         decimal_thick = FRACTION_MAP[selected_frac]
     with c2:
-        # value=None makes the box appear empty
         p_width = st.number_input(f"Width_{part['id']}", min_value=0.0, value=None, placeholder="0.00", step=0.25, key=f"width_{part['id']}", label_visibility="collapsed")
     with c3:
         p_height = st.number_input(f"Height_{part['id']}", min_value=0.0, value=None, placeholder="0.00", step=0.25, key=f"height_{part['id']}", label_visibility="collapsed")
@@ -172,7 +180,6 @@ for i, part in enumerate(st.session_state.parts):
             remove_part(i)
             st.rerun()
 
-    # Calculations only run if data is entered
     if decimal_thick and p_width and p_height and p_qty:
         row_data = PLATE_DATA[decimal_thick]
         row_sqft = (p_width * p_height * p_qty) / 144
@@ -199,7 +206,8 @@ st.write("---")
 st.write("### 📝 Project & Shipping Details")
 det1, det2 = st.columns(2)
 with det1:
-    customer = st.text_input("Customer / Company Name")
+    # Updated to Dropdown List
+    customer = st.selectbox("Customer / Company Name", options=CUSTOMER_OPTIONS)
     po_number = st.text_input("Purchase Order (PO) Number")
 with det2:
     uploaded_files = st.file_uploader("Upload Drawing/PDF (Multiple allowed)", type=["pdf"], accept_multiple_files=True)
@@ -207,8 +215,8 @@ with det2:
 notes = st.text_area("Additional Project Notes")
 
 if st.button("SEND ORDER TO OFFICE"):
-    if not customer:
-        st.error("Please enter a customer name.")
+    if customer == "Select Customer...":
+        st.error("Please select a customer name.")
     elif not parts_data_for_email:
         st.error("Please enter at least one part with valid dimensions.")
     else:
@@ -244,6 +252,6 @@ Notes:
                 smtp.login("Metaluxcorp@gmail.com", "jihihaxgrvtgcstz")
                 smtp.send_message(msg)
             st.balloons()
-            st.success("Order and files sent successfully!")
+            st.success(f"Order for {customer} and files sent successfully!")
         except Exception as e:
             st.error(f"Error: {e}")
