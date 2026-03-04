@@ -43,7 +43,7 @@ if font_base64:
     
     .brand-main {{
         color: black;
-        font-size: 60px; /* Base size for 'metalu' */
+        font-size: 65px; /* Unified size for the whole word */
         font-weight: normal;
         display: block;
         line-height: 1.2;
@@ -51,11 +51,8 @@ if font_base64:
     
     .orange-x {{
         color: #FF6600;
-        font-size: 130px; /* Roughly 2x the base size */
+        text-transform: uppercase; /* Ensures X is capitalized */
         font-weight: normal;
-        line-height: 0;
-        vertical-align: -15px; /* Adjusts the X to sit correctly on the baseline */
-        margin-left: -5px;      /* Pulls it slightly closer to the 'u' */
     }}
     
     .brand-sub {{
@@ -63,7 +60,7 @@ if font_base64:
         font-size: 24px;
         font-weight: normal;
         display: block;
-        margin-top: 0px;
+        margin-top: 5px;
         letter-spacing: 3px;
     }}
     
@@ -161,20 +158,3 @@ if st.button("SEND ORDER TO OFFICE", use_container_width=True):
         Quantity: {quantity}
         Total Weight: {total_lbs:.1f} lbs
         Total Quote: ${final_total:,.2f}
-        
-        Notes:
-        {notes}
-        """
-        try:
-            msg = EmailMessage()
-            msg.set_content(email_content)
-            msg['Subject'] = f"PLATE ORDER: {customer}"
-            msg['From'] = "Metaluxcorp@gmail.com"
-            msg['To'] = "Metaluxcorp@gmail.com"
-            with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-                smtp.login("Metaluxcorp@gmail.com", "jihihaxgrvtgcstz")
-                smtp.send_message(msg)
-            st.balloons()
-            st.success("Order received! We will begin processing shortly.")
-        except:
-            st.error("Submission failed. Check your internet or call support.")
