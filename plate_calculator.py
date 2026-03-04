@@ -252,12 +252,12 @@ Notes:
             msg['Subject'] = f"ORDER: {customer} (PO: {po_number if po_number else 'N/A'})"
             msg['From'] = "Metaluxcorp@gmail.com"
             
-            # SENDING TO BOTH
+            # To: field sends it to both for records
             recipients = ["Metaluxcorp@gmail.com", "boltcosf@gmail.com"]
             msg['To'] = ", ".join(recipients)
             
-            # Ensures if anyone hits reply, both parties see it
-            msg['Reply-To'] = "Metaluxcorp@gmail.com, boltcosf@gmail.com"
+            # Reply-To: ONLY Boltco, so your reply doesn't loop back to yourself
+            msg['Reply-To'] = "boltcosf@gmail.com"
             
             if uploaded_files:
                 for f in uploaded_files:
@@ -267,7 +267,7 @@ Notes:
                 smtp.login("Metaluxcorp@gmail.com", "jihihaxgrvtgcstz")
                 smtp.send_message(msg)
             st.balloons()
-            st.success(f"Order for {customer} sent successfully! Confirmation sent to Boltco office.")
+            st.success(f"Order for {customer} sent successfully! Confirmation sent to Boltco.")
         except Exception as e:
             st.error(f"Error: {e}")
 
@@ -275,7 +275,7 @@ Notes:
 now = datetime.datetime.now().strftime("%H:%M:%S")
 st.markdown(f"""
     <div class="footer-container">
-        <span class="footer-text">metaluX v2.3 Build Success | </span>
+        <span class="footer-text">metaluX v2.4 Build Success | </span>
         <span class="heartbeat-dot">●</span> 
         <span class="footer-text">System Online | Heartbeat: {now}</span>
     </div>
