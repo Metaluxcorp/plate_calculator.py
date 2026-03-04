@@ -89,34 +89,25 @@ if font_base64:
         width: auto !important;
     }}
 
-    /* Sidebar - Subtle Bottom Status */
-    .sidebar-footer {{
-        position: fixed;
-        bottom: 20px;
+    /* Footer Status Styling */
+    .footer-container {{
+        text-align: center;
+        margin-top: 80px;
+        padding-bottom: 20px;
+        border-top: 1px solid #eee;
+        padding-top: 20px;
+    }}
+    .footer-text {{
         font-size: 12px;
         color: #999;
     }}
     .heartbeat-dot {{
         color: #28a745;
-        font-size: 10px;
+        font-size: 12px;
     }}
     </style>
     """
     st.markdown(font_css, unsafe_allow_html=True)
-
-# 4. Subtle Sidebar (Status at bottom)
-with st.sidebar:
-    st.markdown("### metaluX")
-    st.caption("v2.1 Build Success")
-    
-    # Empty space to push status to the bottom
-    for _ in range(25):
-        st.write("")
-        
-    st.divider()
-    now = datetime.datetime.now().strftime("%H:%M:%S")
-    st.markdown(f"<span class='heartbeat-dot'>●</span> **System Online**", unsafe_allow_html=True)
-    st.caption(f"Heartbeat: {now}")
 
 # Display Header
 st.markdown("""
@@ -126,7 +117,7 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# 5. Data Reference
+# 4. Data Reference
 FRACTION_MAP = {
     'Select Thickness...': None,
     '1/8"': 0.125, '3/16"': 0.1875, '1/4"': 0.25, '5/16"': 0.3125,
@@ -157,7 +148,7 @@ PLATE_DATA = {
     1.5:    {"lbs_sqft": 61.27, "price_lb": 0.75, "min_run": 55.0},
 }
 
-# 6. Session State
+# 5. Session State
 if 'parts' not in st.session_state:
     st.session_state.parts = [{'id': 0}]
 if 'part_counter' not in st.session_state:
@@ -171,7 +162,7 @@ def remove_part(index):
     if len(st.session_state.parts) > 1:
         st.session_state.parts.pop(index)
 
-# 7. Dimensions UI
+# 6. Dimensions UI
 total_all_parts_quote = 0.0
 total_all_parts_weight = 0.0
 parts_data_for_email = []
@@ -220,7 +211,7 @@ res_col1, res_col2 = st.columns([2, 1])
 res_col1.markdown(f"#### Total Combined Weight: **{total_all_parts_weight:.1f} lbs**")
 res_col2.markdown(f"## Total Quote: ${total_all_parts_quote:,.2f}")
 
-# 8. Project Details
+# 7. Project Details
 st.write("---")
 st.write("### 📝 Project & Shipping Details")
 det1, det2 = st.columns(2)
@@ -273,3 +264,13 @@ Notes:
             st.success(f"Order for {customer} and files sent successfully!")
         except Exception as e:
             st.error(f"Error: {e}")
+
+# 8. Subtle Page Footer
+now = datetime.datetime.now().strftime("%H:%M:%S")
+st.markdown(f"""
+    <div class="footer-container">
+        <span class="footer-text">metaluX v2.1 Build Success | </span>
+        <span class="heartbeat-dot">●</span> 
+        <span class="footer-text">System Online | Heartbeat: {now}</span>
+    </div>
+    """, unsafe_allow_html=True)
