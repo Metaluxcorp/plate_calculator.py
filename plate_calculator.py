@@ -213,7 +213,7 @@ res_col2.markdown(f"## Total Quote: ${total_all_parts_quote:,.2f}")
 
 # 7. Project Details
 st.write("---")
-st.write("### 📝 Project & Shipping Details")
+st.write("### 📝 Project Details")
 det1, det2 = st.columns(2)
 with det1:
     customer = st.selectbox("Customer / Company Name", options=CUSTOMER_OPTIONS)
