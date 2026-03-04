@@ -10,77 +10,82 @@ st.set_page_config(
     layout="centered"
 )
 
-# 2. Function to load the custom font file
+# 2. Function to load the custom font file (Sansation Light)
 def get_base64_font(font_file):
-    with open(font_file, "rb") as f:
-        data = f.read()
-    return base64.b64encode(data).decode()
+    try:
+        with open(font_file, "rb") as f:
+            data = f.read()
+        return base64.b64encode(data).decode()
+    except FileNotFoundError:
+        return None
 
-# Load Sansation font
-try:
-    font_base64 = get_base64_font("Sansation_Regular.ttf")
-    font_style = f"""
+font_base64 = get_base64_font("Sansation_Light.ttf")
+
+# 3. Custom Branding CSS
+if font_base64:
+    font_css = f"""
     <style>
     @font-face {{
-        font-family: 'Sansation';
+        font-family: 'SansationLight';
         src: url(data:font/truetype;base64,{font_base64}) format('truetype');
     }}
-    </style>
-    """
-    st.markdown(font_style, unsafe_allow_html=True)
-    font_family = "'Sansation', sans-serif"
-except:
-    font_family = "sans-serif" # Fallback if file is missing
-
-# 3. Custom Branding (metaluX with 2x Orange X)
-st.markdown(f"""
-    <style>
-    .brand-container {{
-        font-family: {font_family};
-        text-align: center;
-        line-height: 0.8;
-        padding-top: 20px;
-        margin-bottom: 30px;
+    
+    html, body, [class*="css"], .stMarkdown, .stButton, label {{
+        font-family: 'SansationLight', sans-serif !important;
     }}
+    
+    .brand-container {{
+        text-align: center;
+        line-height: 0.9;
+        padding-top: 10px;
+        margin-bottom: 40px;
+    }}
+    
     .brand-main {{
         color: black;
-        font-size: 80px; /* Large main name */
-        font-weight: bold;
-        display: block;
-    }}
-    .brand-sub {{
-        color: #444444;
-        font-size: 28px;
+        font-size: 85px;
         font-weight: normal;
         display: block;
-        margin-top: 5px;
-        letter-spacing: 1px;
     }}
+    
+    .brand-sub {{
+        color: #333333;
+        font-size: 26px;
+        font-weight: normal;
+        display: block;
+        margin-top: 15px;
+        letter-spacing: 2px;
+    }}
+    
     .orange-x {{
         color: #FF6600;
         display: inline-block;
-        transform: scale(2.2); /* Over 2x scale */
-        margin-left: 20px;       /* Space for the large X */
+        transform: scale(2.0); /* Exactly 2x size */
+        margin-left: 25px;      /* Gap so it doesn't hit the 'u' */
     }}
     
-    /* Global button styling */
+    /* Button Color */
     div.stButton > button:first-child {{
         background-color: #FF6600;
         color: white;
         border: none;
-        font-family: {font_family};
-        font-size: 20px;
-        height: 3em;
+        height: 3.5em;
+        font-size: 18px;
+        font-weight: bold;
     }}
     </style>
-    
+    """
+    st.markdown(font_css, unsafe_allow_html=True)
+
+# Display the custom header
+st.markdown("""
     <div class="brand-container">
         <span class="brand-main">metalu<span class="orange-x">X</span></span>
         <span class="brand-sub">STEEL PLATE CALCULATOR</span>
     </div>
     """, unsafe_allow_html=True)
 
-# 4. Data Reference (From your Excel)
+# 4. Reference Data (Exact Values from your Excel)
 PLATE_DATA = {
     0.125:  {"lbs_sqft": 6.16,  "price_lb": 0.45, "min_run": 3.0},
     0.1875: {"lbs_sqft": 7.66,  "price_lb": 0.45, "min_run": 4.0},
@@ -96,17 +101,17 @@ PLATE_DATA = {
     1.5:    {"lbs_sqft": 61.27, "price_lb": 0.75, "min_run": 55.0},
 }
 
-# 5. User Inputs
+# 5. User Selection Interface
 with st.container(border=True):
-    c1, c2 = st.columns(2)
-    with c1:
-        thickness = st.selectbox("Thickness (in)", options=list(PLATE_DATA.keys()))
-        width = st.number_input("Width (in)", min_value=1.0, value=12.0, step=0.25)
-    with c2:
-        quantity = st.number_input("Quantity", min_value=1, value=1, step=1)
-        height = st.number_input("Height (in)", min_value=1.0, value=12.0, step=0.25)
+    col1, col2 = st.columns(2)
+    with col1:
+        thickness = st.selectbox("Plate Thickness (inches)", options=list(PLATE_DATA.keys()))
+        width = st.number_input("Width (inches)", min_value=1.0, value=12.0, step=0.25)
+    with col2:
+        quantity = st.number_input("Order Quantity", min_value=1, value=1, step=1)
+        height = st.number_input("Height (inches)", min_value=1.0, value=12.0, step=0.25)
 
-# 6. Calculations
+# 6. Calculation Logic (Excel Match)
 data = PLATE_DATA[thickness]
 total_sqft = (width * height * quantity) / 144
 total_lbs = total_sqft * data["lbs_sqft"]
@@ -116,39 +121,52 @@ plasma_cost = total_sqft * (data["min_run"] / 1.2)
 fab_cost = quantity * 0.708333
 drafting_fee = 23.00
 
-taxable = material_cost + plasma_cost + fab_cost
-subtotal = taxable + drafting_fee + (taxable * 0.07)
+# Subtotal including 7% Tax
+taxable_base = material_cost + plasma_cost + fab_cost
+tax = taxable_base * 0.07
+subtotal_with_tax = taxable_base + drafting_fee + tax
 
-ohp_rate = 0.45 if subtotal > 500 else 0.50
-final_total = subtotal + (subtotal * ohp_rate)
+# Profit Margin Logic (OHP)
+ohp_rate = 0.45 if subtotal_with_tax > 500 else 0.50
+final_total = subtotal_with_tax + (subtotal_with_tax * ohp_rate)
 
-# 7. Display Results
+# 7. Display Metrics
 st.divider()
-res1, res2, res3 = st.columns(3)
-res1.metric("Weight", f"{total_lbs:.1f} lbs")
-res2.metric("Unit Price", f"${(final_total/quantity):.2f}")
-res3.subheader(f"Total: ${final_total:,.2f}")
+m1, m2, m3 = st.columns(3)
+m1.metric("Weight", f"{total_lbs:.1f} lbs")
+m2.metric("Per Plate", f"${(final_total/quantity):.2f}")
+m3.subheader(f"Total: ${final_total:,.2f}")
 
-# 8. Order Submission
+# 8. Production Request
 st.write("---")
-cust_name = st.text_input("Customer/Company Name")
-cust_notes = st.text_area("Notes")
+st.write("### 🏢 Client Information")
+customer = st.text_input("Name or Company")
+notes = st.text_area("Production Notes / Delivery Instructions")
 
-if st.button("PLACE ORDER NOW", use_container_width=True):
-    if cust_name:
-        email_content = f"Order: {cust_name}\nSpecs: {width}x{height}x{thickness}\nQty: {quantity}\nTotal: ${final_total:,.2f}"
+if st.button("SUBMIT ORDER TO METALUX", use_container_width=True):
+    if not customer:
+        st.error("Please provide a name/company to submit.")
+    else:
+        email_body = f"""
+        OFFICIAL PLATE ORDER
+        --------------------
+        Customer: {customer}
+        Specs: {width}" x {height}" x {thickness}"
+        Quantity: {quantity}
+        Weight: {total_lbs:.1f} lbs
+        Total Price: ${final_total:,.2f}
+        Notes: {notes}
+        """
         try:
             msg = EmailMessage()
-            msg.set_content(email_content)
-            msg['Subject'] = f"PLATE ORDER: {cust_name}"
+            msg.set_content(email_body)
+            msg['Subject'] = f"NEW PLATE ORDER: {customer}"
             msg['From'] = "Metaluxcorp@gmail.com"
             msg['To'] = "Metaluxcorp@gmail.com"
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
                 smtp.login("Metaluxcorp@gmail.com", "jihihaxgrvtgcstz")
                 smtp.send_message(msg)
             st.balloons()
-            st.success("Order Sent!")
-        except Exception as e:
-            st.error("Failed to send.")
-    else:
-        st.error("Please enter a name.")
+            st.success("Your order has been submitted successfully!")
+        except:
+            st.error("Communication error. Please call the office.")
