@@ -1,6 +1,7 @@
 import streamlit as st
 import smtplib
 import base64
+import datetime
 from email.message import EmailMessage
 
 # 1. Page Configuration
@@ -87,11 +88,29 @@ if font_base64:
         height: 2.5em !important;
         width: auto !important;
     }}
+
+    /* Sidebar Styling */
+    [data-testid="stSidebar"] {{
+        background-color: #f8f9fa;
+    }}
+    .heartbeat {{
+        color: #28a745;
+        font-weight: bold;
+    }}
     </style>
     """
     st.markdown(font_css, unsafe_allow_html=True)
 
-# Display Updated Header
+# 4. Sidebar Heartbeat (Keeps app awake with UptimeRobot)
+with st.sidebar:
+    st.markdown("### 🖥️ System Status")
+    now = datetime.datetime.now().strftime("%H:%M:%S")
+    st.markdown(f"**Portal Status:** <span class='heartbeat'>● ACTIVE</span>", unsafe_allow_html=True)
+    st.caption(f"Last Server Heartbeat: {now}")
+    st.divider()
+    st.info("This portal is monitored 24/7 to ensure zero downtime for Boltco orders.")
+
+# Display Header
 st.markdown("""
     <div class="brand-container">
         <div class="brand-main">metalu<span class="orange-x">X</span></div>
@@ -99,7 +118,7 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# 4. Data Reference
+# 5. Data Reference
 FRACTION_MAP = {
     'Select Thickness...': None,
     '1/8"': 0.125, '3/16"': 0.1875, '1/4"': 0.25, '5/16"': 0.3125,
@@ -130,7 +149,7 @@ PLATE_DATA = {
     1.5:    {"lbs_sqft": 61.27, "price_lb": 0.75, "min_run": 55.0},
 }
 
-# 5. Session State
+# 6. Session State
 if 'parts' not in st.session_state:
     st.session_state.parts = [{'id': 0}]
 if 'part_counter' not in st.session_state:
@@ -144,7 +163,7 @@ def remove_part(index):
     if len(st.session_state.parts) > 1:
         st.session_state.parts.pop(index)
 
-# 6. Dimensions UI
+# 7. Dimensions UI
 total_all_parts_quote = 0.0
 total_all_parts_weight = 0.0
 parts_data_for_email = []
@@ -193,7 +212,7 @@ res_col1, res_col2 = st.columns([2, 1])
 res_col1.markdown(f"#### Total Combined Weight: **{total_all_parts_weight:.1f} lbs**")
 res_col2.markdown(f"## Total Quote: ${total_all_parts_quote:,.2f}")
 
-# 7. Project Details
+# 8. Project Details
 st.write("---")
 st.write("### 📝 Project & Shipping Details")
 det1, det2 = st.columns(2)
