@@ -11,7 +11,7 @@ st.set_page_config(
     layout="wide" 
 )
 
-# 2. Function to load the custom font (Sansation Light)
+# 2. Function to load font
 def get_base64_font(font_file):
     try:
         with open(font_file, "rb") as f:
@@ -79,7 +79,7 @@ if font_base64:
         background-color: #e65c00 !important;
     }}
 
-    /* Row management buttons (X and Add Part) - Neutral Gray */
+    /* Row management buttons */
     div[data-testid="column"] button, div.add-btn button {{
         background-color: #f0f2f6 !important;
         color: #333 !important;
@@ -89,26 +89,34 @@ if font_base64:
         width: auto !important;
     }}
 
-    /* Sidebar Styling */
-    [data-testid="stSidebar"] {{
-        background-color: #f8f9fa;
+    /* Sidebar - Subtle Bottom Status */
+    .sidebar-footer {{
+        position: fixed;
+        bottom: 20px;
+        font-size: 12px;
+        color: #999;
     }}
-    .heartbeat {{
+    .heartbeat-dot {{
         color: #28a745;
-        font-weight: bold;
+        font-size: 10px;
     }}
     </style>
     """
     st.markdown(font_css, unsafe_allow_html=True)
 
-# 4. Sidebar Heartbeat (Keeps app awake with UptimeRobot)
+# 4. Subtle Sidebar (Status at bottom)
 with st.sidebar:
-    st.markdown("### 🖥️ System Status")
-    now = datetime.datetime.now().strftime("%H:%M:%S")
-    st.markdown(f"**Portal Status:** <span class='heartbeat'>● ACTIVE</span>", unsafe_allow_html=True)
-    st.caption(f"Last Server Heartbeat: {now}")
+    st.markdown("### metaluX")
+    st.caption("v2.1 Build Success")
+    
+    # Empty space to push status to the bottom
+    for _ in range(25):
+        st.write("")
+        
     st.divider()
-    st.info("This portal is monitored 24/7 to ensure zero downtime for Boltco orders.")
+    now = datetime.datetime.now().strftime("%H:%M:%S")
+    st.markdown(f"<span class='heartbeat-dot'>●</span> **System Online**", unsafe_allow_html=True)
+    st.caption(f"Heartbeat: {now}")
 
 # Display Header
 st.markdown("""
