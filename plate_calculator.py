@@ -5,7 +5,7 @@ from email.message import EmailMessage
 
 # 1. Page Configuration
 st.set_page_config(
-    page_title="metaluX Steel Plate Calculator", 
+    page_title="metaluX Steel Plate Order Portal", 
     page_icon="Metalux_White.jpg",
     layout="wide" 
 )
@@ -62,14 +62,8 @@ if font_base64:
         letter-spacing: 3px;
     }}
     
-    /* Global Button Font */
-    div.stButton > button {{
-        font-family: 'SansationLight', sans-serif !important;
-        border-radius: 8px;
-    }}
-    
-    /* Main Orange Button */
-    .stButton > button {{
+    /* Main Action Button - metaluX Orange */
+    div.stButton > button:first-of-type {{
         background-color: #FF6600 !important;
         color: white !important;
         border: none !important;
@@ -77,32 +71,31 @@ if font_base64:
         font-size: 18px !important;
         font-weight: bold !important;
         width: 100%;
+        border-radius: 8px;
     }}
     
-    .stButton > button:hover {{
+    div.stButton > button:first-of-type:hover {{
         background-color: #e65c00 !important;
     }}
 
-    /* Neutral buttons for row management */
-    div[data-testid="column"] button {{
+    /* Row management buttons (X and Add Part) - Neutral Gray */
+    div[data-testid="column"] button, div.add-btn button {{
         background-color: #f0f2f6 !important;
         color: #333 !important;
-    }}
-
-    div.add-btn button {{
-        background-color: #f0f2f6 !important;
-        color: black !important;
         border: 1px solid #dcdfe6 !important;
+        font-size: 14px !important;
+        height: 2.5em !important;
+        width: auto !important;
     }}
     </style>
     """
     st.markdown(font_css, unsafe_allow_html=True)
 
-# Display Header
+# Display Updated Header
 st.markdown("""
     <div class="brand-container">
         <div class="brand-main">metalu<span class="orange-x">X</span></div>
-        <div class="brand-sub">STEEL PLATE CALCULATOR</div>
+        <div class="brand-sub">STEEL PLATE ORDER PORTAL</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -114,7 +107,6 @@ FRACTION_MAP = {
     '7/8"': 0.875, '1"': 1.0, '1-1/4"': 1.25, '1-1/2"': 1.5
 }
 
-# Added Customer Options
 CUSTOMER_OPTIONS = [
     "Select Customer...",
     "Boltco/Brett",
@@ -152,7 +144,7 @@ def remove_part(index):
     if len(st.session_state.parts) > 1:
         st.session_state.parts.pop(index)
 
-# 6. UI
+# 6. Dimensions UI
 total_all_parts_quote = 0.0
 total_all_parts_weight = 0.0
 parts_data_for_email = []
@@ -201,12 +193,11 @@ res_col1, res_col2 = st.columns([2, 1])
 res_col1.markdown(f"#### Total Combined Weight: **{total_all_parts_weight:.1f} lbs**")
 res_col2.markdown(f"## Total Quote: ${total_all_parts_quote:,.2f}")
 
-# 7. Details
+# 7. Project Details
 st.write("---")
 st.write("### 📝 Project & Shipping Details")
 det1, det2 = st.columns(2)
 with det1:
-    # Updated to Dropdown List
     customer = st.selectbox("Customer / Company Name", options=CUSTOMER_OPTIONS)
     po_number = st.text_input("Purchase Order (PO) Number")
 with det2:
