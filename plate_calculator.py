@@ -7,7 +7,7 @@ from email.message import EmailMessage
 st.set_page_config(
     page_title="metaluX Steel Plate Calculator", 
     page_icon="Metalux_White.jpg",
-    layout="wide" # Set to wide to accommodate multi-line inputs comfortably
+    layout="wide" 
 )
 
 # 2. Function to load the custom font (Sansation Light)
@@ -30,7 +30,7 @@ if font_base64:
         src: url(data:font/truetype;base64,{font_base64}) format('truetype');
     }}
     
-    html, body, [class*="css"], .stMarkdown, .stButton, label, .stSelectbox, .stNumberInput, p, span {{
+    html, body, [class*="css"], .stMarkdown, .stButton, label, .stSelectbox, .stNumberInput, p, span, .stTextArea, .stTextInput {{
         font-family: 'SansationLight', sans-serif !important;
     }}
     
@@ -82,7 +82,6 @@ if font_base64:
         color: white;
     }}
 
-    /* Add/Remove buttons */
     .add-btn > div.stButton > button {{
         background-color: #f0f2f6;
         color: black;
@@ -101,20 +100,10 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # 4. Data Reference & Fraction Mapping
-# Maps user-facing fractions to decimal math keys
 FRACTION_MAP = {
-    '1/8"': 0.125,
-    '3/16"': 0.1875,
-    '1/4"': 0.25,
-    '5/16"': 0.3125,
-    '3/8"': 0.375,
-    '1/2"': 0.5,
-    '5/8"': 0.625,
-    '3/4"': 0.75,
-    '7/8"': 0.875,
-    '1"': 1.0,
-    '1-1/4"': 1.25,
-    '1-1/2"': 1.5
+    '1/8"': 0.125, '3/16"': 0.1875, '1/4"': 0.25, '5/16"': 0.3125,
+    '3/8"': 0.375, '1/2"': 0.5, '5/8"': 0.625, '3/4"': 0.75,
+    '7/8"': 0.875, '1"': 1.0, '1-1/4"': 1.25, '1-1/2"': 1.5
 }
 
 PLATE_DATA = {
@@ -149,24 +138,17 @@ def remove_part(index):
 # 6. Multi-Line Input UI
 total_all_parts_quote = 0.0
 total_all_parts_weight = 0.0
-order_summary_text = ""
+parts_data_for_email = []
 
 st.write("### Plate Dimensions")
-
-# Column headers
 h1, h2, h3, h4, h5 = st.columns([2, 2, 2, 2, 1])
 h1.markdown("**Thickness**")
 h2.markdown("**Width (in)**")
 h3.markdown("**Height (in)**")
 h4.markdown("**Quantity**")
-h5.write("")
 
-parts_data_for_email = []
-
-# Generate a row for each part
 for i, part in enumerate(st.session_state.parts):
     c1, c2, c3, c4, c5 = st.columns([2, 2, 2, 2, 1])
-    
     with c1:
         selected_frac = st.selectbox(f"Thick_{part['id']}", options=list(FRACTION_MAP.keys()), key=f"thick_sel_{part['id']}", label_visibility="collapsed")
         decimal_thick = FRACTION_MAP[selected_frac]
@@ -177,53 +159,41 @@ for i, part in enumerate(st.session_state.parts):
     with c4:
         p_qty = st.number_input(f"Qty_{part['id']}", min_value=1, value=1, step=1, key=f"qty_{part['id']}", label_visibility="collapsed")
     with c5:
-        if st.button("X", key=f"rem_{part['id']}", help="Remove this part"):
+        if st.button("X", key=f"rem_{part['id']}"):
             remove_part(i)
             st.rerun()
 
-    # --- Calculation for this specific row ---
+    # Calculations
     row_data = PLATE_DATA[decimal_thick]
     row_sqft = (p_width * p_height * p_qty) / 144
     row_lbs = row_sqft * row_data["lbs_sqft"]
+    row_taxable = (row_lbs * row_data["price_lb"]) + (row_sqft * (row_data["min_run"] / 1.2)) + (p_qty * 0.708333)
+    row_subtotal = row_taxable + 23.00 + (row_taxable * 0.07)
+    row_total = row_subtotal * (1.45 if row_subtotal > 500 else 1.50)
     
-    row_material_cost = row_lbs * row_data["price_lb"]
-    row_plasma_cost = row_sqft * (row_data["min_run"] / 1.2)
-    row_fab_cost = p_qty * 0.708333
-    row_drafting = 23.00 # Assuming drafting fee is per unique plate size/line
-    
-    row_taxable = row_material_cost + row_plasma_cost + row_fab_cost
-    row_subtotal = row_taxable + row_drafting + (row_taxable * 0.07)
-    
-    # Track totals
     total_all_parts_weight += row_lbs
-    # Profit logic is applied to the grand subtotal usually, but per Excel it's row-based:
-    row_ohp_rate = 0.45 if row_subtotal > 500 else 0.50
-    row_total = row_subtotal + (row_subtotal * row_ohp_rate)
-    
     total_all_parts_quote += row_total
-    
-    # Store text for email
-    parts_data_for_email.append(f"- {p_qty}x {selected_frac} Plate ({p_width}\" x {p_height}\") | Weight: {row_lbs:.1f} lbs | Line Total: ${row_total:,.2f}")
+    parts_data_for_email.append(f"- {p_qty}x {selected_frac} ({p_width}\"x{p_height}\") | {row_lbs:.1f} lbs | ${row_total:,.2f}")
 
-# Add Part Button
 st.markdown('<div class="add-btn">', unsafe_allow_html=True)
 st.button("+ ADD PART", on_click=add_part)
 st.markdown('</div>', unsafe_allow_html=True)
 
-# 7. Grand Totals Display
 st.divider()
 res_col1, res_col2 = st.columns([2, 1])
+res_col1.markdown(f"#### Total Combined Weight: **{total_all_parts_weight:.1f} lbs**")
+res_col2.markdown(f"## Total Quote: ${total_all_parts_quote:,.2f}")
 
-with res_col1:
-    st.markdown(f"#### Total Combined Weight: **{total_all_parts_weight:.1f} lbs**")
-
-with res_col2:
-    st.markdown(f"## Total Quote: ${total_all_parts_quote:,.2f}")
-
-# 8. Final Order Submission
+# 7. Project Details & File Upload
 st.write("---")
-st.write("### 📝 Project Details")
-customer = st.text_input("Customer / Company Name")
+st.write("### 📝 Project & Shipping Details")
+det1, det2 = st.columns(2)
+with det1:
+    customer = st.text_input("Customer / Company Name")
+    po_number = st.text_input("Purchase Order (PO) Number")
+with det2:
+    uploaded_files = st.file_uploader("Upload Drawing/PDF (Multiple allowed)", type=["pdf"], accept_multiple_files=True)
+
 notes = st.text_area("Additional Project Notes")
 
 st.markdown('<div class="submit-btn">', unsafe_allow_html=True)
@@ -231,12 +201,12 @@ if st.button("SEND ORDER TO OFFICE", use_container_width=True):
     if not customer:
         st.error("Please enter a customer name.")
     else:
-        # Build multi-line email body
         email_parts_list = "\n".join(parts_data_for_email)
         email_content = f"""
-NEW MULTI-PART PLATE ORDER
+NEW PLATE ORDER
 ---------------------------
 Customer: {customer}
+PO Number: {po_number if po_number else 'N/A'}
 
 PARTS LIST:
 {email_parts_list}
@@ -251,14 +221,20 @@ Notes:
         try:
             msg = EmailMessage()
             msg.set_content(email_content)
-            msg['Subject'] = f"MULTI-PART ORDER: {customer}"
+            msg['Subject'] = f"ORDER: {customer} (PO: {po_number if po_number else 'N/A'})"
             msg['From'] = "Metaluxcorp@gmail.com"
             msg['To'] = "Metaluxcorp@gmail.com"
+            
+            # Attach PDFs
+            if uploaded_files:
+                for f in uploaded_files:
+                    msg.add_attachment(f.read(), maintype='application', subtype='pdf', filename=f.name)
+            
             with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
                 smtp.login("Metaluxcorp@gmail.com", "jihihaxgrvtgcstz")
                 smtp.send_message(msg)
             st.balloons()
-            st.success("Full order sent to metaluX office!")
+            st.success("Order and files sent successfully!")
         except Exception as e:
             st.error(f"Error: {e}")
 st.markdown('</div>', unsafe_allow_html=True)
