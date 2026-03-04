@@ -62,29 +62,45 @@ if font_base64:
         letter-spacing: 3px;
     }}
     
-    /* Button Styles */
+    /* Global Button Font */
     div.stButton > button {{
         font-family: 'SansationLight', sans-serif !important;
         border-radius: 8px;
     }}
     
-    .submit-btn > div.stButton > button {{
-        background-color: #FF6600;
-        color: white;
-        border: none;
+    /* "SEND ORDER TO OFFICE" Button - Branded Orange */
+    .stButton > button {{
+        background-color: #FF6600 !important;
+        color: white !important;
+        border: none !important;
         height: 3.5em;
-        font-size: 18px;
-        font-weight: bold;
+        font-size: 18px !important;
+        font-weight: bold !important;
+        width: 100%;
     }}
-    .submit-btn > div.stButton > button:hover {{
-        background-color: #e65c00;
-        color: white;
+    
+    /* Hover effect for the Orange Button */
+    .stButton > button:hover {{
+        background-color: #e65c00 !important;
+        color: white !important;
+        border: none !important;
     }}
 
-    .add-btn > div.stButton > button {{
-        background-color: #f0f2f6;
-        color: black;
-        border: 1px solid #dcdfe6;
+    /* Specific style for the "X" remove button to keep it neutral */
+    div[data-testid="column"] button:contains("X") {{
+        background-color: #f0f2f6 !important;
+        color: #333 !important;
+        font-size: 14px !important;
+        height: 2.5em !important;
+    }}
+
+    /* Specific style for the "+ ADD PART" to be neutral but visible */
+    div.add-btn button {{
+        background-color: #f0f2f6 !important;
+        color: black !important;
+        border: 1px solid #dcdfe6 !important;
+        font-size: 16px !important;
+        height: 3em !important;
     }}
     </style>
     """
@@ -120,7 +136,7 @@ PLATE_DATA = {
     1.5:    {"lbs_sqft": 61.27, "price_lb": 0.75, "min_run": 55.0},
 }
 
-# 5. Session State for Multi-Part List
+# 5. Session State
 if 'parts' not in st.session_state:
     st.session_state.parts = [{'id': 0}]
 if 'part_counter' not in st.session_state:
@@ -162,7 +178,7 @@ for i, part in enumerate(st.session_state.parts):
             remove_part(i)
             st.rerun()
 
-    # Calculations
+    # Calculations (matching your Excel logic)
     row_data = PLATE_DATA[decimal_thick]
     row_sqft = (p_width * p_height * p_qty) / 144
     row_lbs = row_sqft * row_data["lbs_sqft"]
@@ -172,8 +188,6 @@ for i, part in enumerate(st.session_state.parts):
     
     total_all_parts_weight += row_lbs
     total_all_parts_quote += row_total
-    
-    # FORMATTED LINE FOR EMAIL: (QTY) Size" x Size" x Thickness"
     parts_data_for_email.append(f"({p_qty}) {p_width}\" x {p_height}\" x {selected_frac}")
 
 st.markdown('<div class="add-btn">', unsafe_allow_html=True)
@@ -197,8 +211,7 @@ with det2:
 
 notes = st.text_area("Additional Project Notes")
 
-st.markdown('<div class="submit-btn">', unsafe_allow_html=True)
-if st.button("SEND ORDER TO OFFICE", use_container_width=True):
+if st.button("SEND ORDER TO OFFICE"):
     if not customer:
         st.error("Please enter a customer name.")
     else:
@@ -237,4 +250,4 @@ Notes:
             st.success("Order and files sent successfully!")
         except Exception as e:
             st.error(f"Error: {e}")
-st.markdown('</div>', unsafe_allow_html=True)
+            
